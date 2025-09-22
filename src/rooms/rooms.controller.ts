@@ -41,6 +41,7 @@ export class RoomsController {
           new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 15 }),
           new FileTypeValidator({ fileType: /(jpg|jpeg|png)$/ }),
         ],
+        fileIsRequired: false,
       }),
     )
     file?: Express.Multer.File,
@@ -48,7 +49,9 @@ export class RoomsController {
     return this.roomsService.addNewRoom({
       roomType: dto.roomType,
       roomPrice: dto.roomPrice,
-      photo: file?.buffer,
+      photo: file
+        ? { buffer: file.buffer, mimetype: file.mimetype }
+        : undefined,
     });
   }
 
@@ -67,10 +70,13 @@ export class RoomsController {
     @Param('id', ParseIntPipe) id: number,
     @Res() res: Response,
   ) {
-    const photo = await this.roomsService.getPhotoByRoomId(id);
-    if (!photo) throw new NotFoundException('Photo not found');
-    res.setHeader('Content-Type', 'image/jpeg');
-    res.send(photo);
+    const room = await this.roomsService.getRoomById(id);
+    if (!room?.photo) {
+      throw new NotFoundException('Photo not found');
+    }
+
+    const photoPath = await this.roomsService.getPhotoPath(room.photo);
+    res.sendFile(photoPath);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -102,7 +108,7 @@ export class RoomsController {
       id,
       dto.roomType,
       dto.roomPrice,
-      file?.buffer,
+      file ? { buffer: file.buffer, mimetype: file.mimetype } : undefined,
     );
   }
 }

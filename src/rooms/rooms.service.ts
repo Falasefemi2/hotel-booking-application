@@ -1,44 +1,65 @@
 import { Injectable } from '@nestjs/common';
 import { Room } from '@prisma/client';
-import { FileUploadService } from 'src/fileuploads.service';
 import { PrismaService } from 'src/prisma.service';
+
+import { writeFile, unlink } from 'fs/promises';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 
 type RoomWithoutPhoto = Omit<Room, 'photo'>;
 
 @Injectable()
 export class RoomsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly fileUploadService: FileUploadService,
-  ) {}
+  private readonly uploadDir = join(process.cwd(), 'uploads', 'rooms');
+
+  constructor(private readonly prisma: PrismaService) {
+    if (!existsSync(this.uploadDir)) {
+      mkdirSync(this.uploadDir, { recursive: true });
+    }
+  }
 
   async addNewRoom(data: {
     roomType: string;
     roomPrice: number;
-    photo?: Buffer;
+    photo?: { buffer: Buffer; mimetype: string };
   }): Promise<Room> {
-    return this.prisma.room.create({
+    const room = await this.prisma.room.create({
       data: {
         roomType: data.roomType,
         roomPrice: data.roomPrice,
-        photo: data.photo?.toString('base64'),
       },
     });
+
+    if (data.photo) {
+      const photoUrl = await this.saveRoomPhoto(
+        room.id,
+        data.photo.buffer,
+        data.photo.mimetype,
+      );
+      return this.prisma.room.update({
+        where: { id: room.id },
+        data: { photo: photoUrl },
+      });
+    }
+
+    return room;
   }
 
-  async getAllRooms(): Promise<RoomWithoutPhoto[]> {
-    return this.prisma.room.findMany({
-      select: {
-        id: true,
-        roomType: true,
-        roomPrice: true,
-        isBooked: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-  }
+  private async saveRoomPhoto(
+    roomId: number,
+    buffer: Buffer,
+    mimetype: string,
+  ): Promise<string> {
+    const extension = mimetype.split('/')[1] || 'jpg';
+    const filename = `room-${roomId}-${Date.now()}.${extension}`;
+    const filepath = join(this.uploadDir, filename);
 
+    await writeFile(filepath, buffer);
+    return `/uploads/rooms/${filename}`;
+  }
+  async getAllRooms(): Promise<Room[]> {
+    return this.prisma.room.findMany();
+  }
   async getPhotoByRoomId(roomId: number): Promise<Buffer | null> {
     const room = await this.prisma.room.findUnique({
       where: { id: roomId },
@@ -56,60 +77,71 @@ export class RoomsService {
     const room = await this.prisma.room.findUnique({ where: { id: roomId } });
 
     if (room?.photo) {
-      await this.fileUploadService.deleteRoomPhoto(room?.photo);
+      await this.deleteRoomPhoto(room?.photo);
     }
 
     return this.prisma.room.delete({ where: { id: roomId } });
+  }
+
+  private async deleteRoomPhoto(photoUrl: string): Promise<void> {
+    const filename = photoUrl.split('/').pop();
+    const filepath = join(this.uploadDir, filename!);
+
+    try {
+      await unlink(filepath);
+    } catch (error) {
+      console.warn(`Failed to delete photo: ${filepath}`);
+    }
   }
 
   async updateRoom(
     roomId: number,
     roomType?: string,
     roomPrice?: number,
-    photoBytes?: Buffer,
+    photo?: { buffer: Buffer; mimetype: string },
   ): Promise<Room> {
+    const updateData: any = {
+      ...(roomType && { roomType }),
+      ...(roomPrice && { roomPrice }),
+    };
+
+    if (photo) {
+      const existingRoom = await this.prisma.room.findUnique({
+        where: { id: roomId },
+      });
+      if (existingRoom?.photo) {
+        await this.deleteRoomPhoto(existingRoom.photo);
+      }
+      const photoUrl = await this.saveRoomPhoto(
+        roomId,
+        photo.buffer,
+        photo.mimetype,
+      );
+      updateData.photoUrl = photoUrl;
+    }
+
     return this.prisma.room.update({
       where: { id: roomId },
-      data: {
-        ...(roomType && { roomType }),
-        ...(roomPrice && { roomPrice }),
-        ...(photoBytes && { photo: photoBytes.toString('base64') }),
-      },
+      data: updateData,
     });
   }
 
-  async getRoomById(roomId: number): Promise<RoomWithoutPhoto | null> {
-    return this.prisma.room.findUnique({
-      where: { id: roomId },
-      select: {
-        id: true,
-        roomType: true,
-        roomPrice: true,
-        isBooked: true,
-        createdAt: true,
-        updatedAt: true,
-        photo: true,
-      },
-    });
+  async getRoomById(roomId: number): Promise<Room | null> {
+    return this.prisma.room.findUnique({ where: { id: roomId } });
   }
 
-  async getAvailableRooms(): Promise<RoomWithoutPhoto[]> {
-    return this.prisma.room.findMany({
-      where: { isBooked: false },
-      select: {
-        id: true,
-        roomType: true,
-        roomPrice: true,
-        isBooked: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+  async getAvailableRooms(): Promise<Room[]> {
+    return this.prisma.room.findMany({ where: { isBooked: false } });
   }
 
   async getRoomWithPhoto(roomId: number): Promise<Room | null> {
     return this.prisma.room.findUnique({
       where: { id: roomId },
     });
+  }
+
+  async getPhotoPath(photoUrl: string): Promise<string> {
+    const filename = photoUrl.split('/').pop();
+    return join(this.uploadDir, filename!);
   }
 }

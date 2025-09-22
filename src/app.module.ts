@@ -7,7 +7,7 @@ import { RoomsModule } from './rooms/rooms.module';
 @Module({
   imports: [AuthModule, UsersModule, RolesModule, RoomsModule],
   controllers: [],
-  // providers: [FileuploadsService],
-  // exports: [FileuploadsService],
+  // providers: [],
+  // exports: [],
 })
 export class AppModule {}
