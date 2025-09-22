@@ -1,15 +1,9 @@
 import { Transform } from 'class-transformer';
-import {
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateRoleDto {
-  @Transform(({ value }) => value?.trim().toLowerCase())
   @IsOptional()
+  @Transform(({ value }) => value?.trim().toLowerCase())
   @IsString({ message: 'Role name must be a string' })
   @MinLength(2, { message: 'Role name must be at least 2 characters long' })
   @MaxLength(50, { message: 'Role name cannot exceed 50 characters' })
