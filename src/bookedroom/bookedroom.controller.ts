@@ -7,6 +7,7 @@ import {
   Post,
   UseGuards,
   ParseIntPipe,
+  Req,
 } from '@nestjs/common';
 import { BookedroomService } from './bookedroom.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -38,14 +39,26 @@ export class BookedroomController {
     return this.bookedroomService.findBookingByUserEmail(email);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
   @Post('/room/:roomId/booking')
   async saveBooking(
     @Param('roomId', ParseIntPipe) roomId: number,
     @Body() bookingDto: CreateBookingDto,
+    @Req() req: any,
   ) {
-    return this.bookedroomService.saveBooking(roomId, bookingDto);
+    const userEmail = req.user?.email ?? bookingDto.guestEmail;
+
+    const bookingRequest = {
+      ...bookingDto,
+      guestEmail: userEmail,
+    } as CreateBookingDto;
+
+    return this.bookedroomService.saveBooking(roomId, bookingRequest);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
   @Delete('/booking/:bookingId/delete')
   async cancelBooking(@Param('bookingId', ParseIntPipe) bookingId: number) {
     return this.bookedroomService.cancelBooking(bookingId);
