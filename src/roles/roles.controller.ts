@@ -15,7 +15,9 @@ import { RolesGuard } from 'src/common/roles.guard';
 import { CreateRoleDto } from './dto/createRole.dto';
 import { Role, User } from '@prisma/client';
 import { AssignRoleDto } from './dto/assignRole.dto';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('roles')
 @Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
@@ -23,6 +25,7 @@ export class RolesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get('/all-roles')
+  @ApiBearerAuth('access-token')
   async getRoles() {
     return await this.rolesService.getAllRoles();
   }
@@ -30,6 +33,7 @@ export class RolesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Post('/create-role')
+  @ApiBearerAuth('access-token')
   async createRole(@Body() createRoleDto: CreateRoleDto) {
     return await this.rolesService.createRole(createRoleDto);
   }
@@ -37,6 +41,7 @@ export class RolesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete('/delete-role/:id')
+  @ApiBearerAuth('access-token')
   async deleteRole(@Param('id', ParseIntPipe) id: number) {
     return await this.rolesService.deleteRole(id);
   }
@@ -44,6 +49,7 @@ export class RolesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get(':id')
+  @ApiBearerAuth('access-token')
   async getRoleById(@Param('id', ParseIntPipe) id: number): Promise<Role> {
     return this.rolesService.getRoleWithUsers(id);
   }
@@ -51,6 +57,7 @@ export class RolesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete(':roleId/users/:userId')
+  @ApiBearerAuth('access-token')
   async removeUserFromRole(
     @Param('roleId', ParseIntPipe) roleId: number,
     @Param('userId', ParseIntPipe) userId: number,
@@ -61,6 +68,7 @@ export class RolesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete(':roleId/users')
+  @ApiBearerAuth('access-token')
   async removeAllUsersFromRole(
     @Param('roleId', ParseIntPipe) roleId: number,
   ): Promise<Role> {
@@ -70,6 +78,7 @@ export class RolesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get(':roleId/users')
+  @ApiBearerAuth('access-token')
   async getUsersWithRole(
     @Param('roleId', ParseIntPipe) roleId: number,
   ): Promise<User[]> {
@@ -79,6 +88,7 @@ export class RolesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Post(':roleId/users')
+  @ApiBearerAuth('access-token')
   async assignUser(
     @Param('roleId', ParseIntPipe) roleId: number,
     @Body() dto: AssignRoleDto,

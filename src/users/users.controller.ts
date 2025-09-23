@@ -11,7 +11,9 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/common/roles.guard';
 import { Roles } from 'src/common/roles.decorator';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly userservice: UsersService) {}
@@ -19,6 +21,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get('/all')
+  @ApiBearerAuth('access-token')
   async getAllUsers() {
     return await this.userservice.getAllUsers();
   }
@@ -26,6 +29,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'USER')
   @Get(':email')
+  @ApiBearerAuth('access-token')
   async getUserByEmail(@Param('email') email: string) {
     return await this.userservice.getUserByEmail(email);
   }
@@ -33,6 +37,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'USER')
   @Delete('delete/:email')
+  @ApiBearerAuth('access-token')
   async deleteUser(@Param('email') email: string) {
     try {
       const result = await this.userservice.deleteUser({ email });
@@ -50,6 +55,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete('delete/by-id/:id')
+  @ApiBearerAuth('access-token')
   async deleteUserById(@Param('id', ParseIntPipe) id: number) {
     return this.userservice.deleteUserById(id);
   }

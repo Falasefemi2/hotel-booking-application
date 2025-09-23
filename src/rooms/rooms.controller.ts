@@ -24,7 +24,9 @@ import { UpdateRoomDto } from './dto/updateRoom.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/common/roles.guard';
 import { Roles } from 'src/common/roles.decorator';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('rooms')
 @Controller('rooms')
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
@@ -33,6 +35,8 @@ export class RoomsController {
   @Roles('ADMIN')
   @Post()
   @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBearerAuth('access-token')
   async createRoom(
     @Body() dto: CreateNewRoomDto,
     @UploadedFile(
@@ -82,6 +86,7 @@ export class RoomsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete(':id')
+  @ApiBearerAuth('access-token')
   async deleteRoom(@Param('id', ParseIntPipe) id: number) {
     return this.roomsService.deleteRoom(id);
   }
@@ -89,7 +94,8 @@ export class RoomsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id')
-  @UseInterceptors(FileInterceptor('photo'))
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiBearerAuth('access-token')
   async updateRoom(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRoomDto,
