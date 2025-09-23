@@ -51,7 +51,7 @@ model BookedRoom {
   noOfAdults              Int
   noOfChildren            Int
   totalNoOfGuests         Int
-  bookingConfirmationCode String
+  bookingConfirmationCode String   @unique
 
   roomId Int
   room   Room @relation(fields: [roomId], references: [id], onDelete: Cascade)

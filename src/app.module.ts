@@ -4,8 +4,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
 import { RoomsModule } from './rooms/rooms.module';
-import { AppService } from './app.service';
-import { AppController } from './app.controller';
+import { BookedroomModule } from './bookedroom/bookedroom.module';
 
 @Module({
   imports: [
@@ -18,9 +17,10 @@ import { AppController } from './app.controller';
     UsersModule,
     RolesModule,
     RoomsModule,
+    BookedroomModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
   // providers: [],
   // exports: [],
 })
