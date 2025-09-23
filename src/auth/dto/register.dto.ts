@@ -1,31 +1,75 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  MaxLength,
+  Matches,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 
 export class RegisterDto {
   @ApiProperty({
-    description: 'First name of the user',
+    description: 'User first name',
+    example: 'John',
+    minLength: 2,
+    maxLength: 50,
   })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'First name must be a string' })
+  @IsNotEmpty({ message: 'First name is required' })
+  @MinLength(2, { message: 'First name must be at least 2 characters long' })
+  @MaxLength(50, { message: 'First name cannot exceed 50 characters' })
+  @Matches(/^[a-zA-Z\s'-]+$/, {
+    message:
+      'First name can only contain letters, spaces, hyphens, and apostrophes',
+  })
+  @Transform(({ value }) => value?.trim())
   firstName: string;
 
   @ApiProperty({
-    description: 'Last name of the user',
+    description: 'User last name',
+    example: 'Doe',
+    minLength: 2,
+    maxLength: 50,
   })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Last name must be a string' })
+  @IsNotEmpty({ message: 'Last name is required' })
+  @MinLength(2, { message: 'Last name must be at least 2 characters long' })
+  @MaxLength(50, { message: 'Last name cannot exceed 50 characters' })
+  @Matches(/^[a-zA-Z\s'-]+$/, {
+    message:
+      'Last name can only contain letters, spaces, hyphens, and apostrophes',
+  })
+  @Transform(({ value }) => value?.trim())
   lastName: string;
 
   @ApiProperty({
-    description: 'Email of the user',
+    description: 'User email address',
+    example: 'john.doe@example.com',
+    format: 'email',
   })
-  @IsEmail()
+  @IsEmail({}, { message: 'Please provide a valid email address' })
+  @IsNotEmpty({ message: 'Email is required' })
+  @MaxLength(320, { message: 'Email cannot exceed 320 characters' })
+  @Transform(({ value }) => value?.toLowerCase().trim())
   email: string;
 
   @ApiProperty({
-    description: 'Password of the user',
+    description:
+      'User password - must contain at least 8 characters with uppercase, lowercase, number and special character',
+    example: 'SecurePass123!',
+    minLength: 8,
+    maxLength: 128,
+    format: 'password',
   })
-  @IsString()
-  @MinLength(8)
+  @IsString({ message: 'Password must be a string' })
+  @IsNotEmpty({ message: 'Password is required' })
+  @MinLength(8, { message: 'Password must be at least 8 characters long' })
+  @MaxLength(128, { message: 'Password cannot exceed 128 characters' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+  })
   password: string;
 }
